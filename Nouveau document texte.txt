@@ -1,0 +1,59 @@
+$2b$05$VFO3fYCz1clRyKniGstW3ulB5qln59NOToh33dhkGcUqG.J3/3vr6
+
+$2b$05$VFO3fYCz1clRyKniGstW3ulB5qln59NOToh33dhkGcUqG.J3/3vr6
+$2b$05$VFO3fYCz1clRyKniGstW3ulB5qln59NOToh33dhkGcUqG.J3/3vr6
+$2b$05$hAyVsbTPAAF8f0QHiBPnluk29jARJ0OBwDqwzizC.VLkMVnh62hJW
+$2b$05$VFO3fYCz1clRyKniGstW3ulB5qln59NOToh33dhkGcUqG.J3/3vr6
+$2b$05$RGHWJZYw6e5TofecFxPkcejEX9EpvUurj9oRr9AgoYdfBVa7DDzVG
+
+$2b$05$sndTW2awjBw.7DGas9Wx2eHlVefhmoZy63TaeGmqvs7kVPqRc7oMO
+$2b$05$FRWEf9i4KGUqQcrFeIYwveWwJfrkMKIzVQ6sAS4LBfoA6rqJfkCUu
+
+$2b$05$VFO3fYCz1clRyKniGstW3ulB5qln59NOToh33dhkGcUqG.J3/3vr6
+$2b$05$VFO3fYCz1clRyKniGstW3ulB5qln59NOToh33dhkGcUqG.J3/3vr6
+$2b$05$6fz8IxL0IteQ/Tu7IhNog.GxJMXhhbCs.nbImuvexh/H2zBlX5V96
+
+
+router.put('/updatePsw', (req, res) => {
+  var Login = req.body.Login;
+  var NewPsw = req.body.password_ ;
+  if (!PASSWORD_REGEX.test(NewPsw)) {
+    return res.status(400).json({ 'error': 'password invalid (must length 4 - 8 and include 1 number at least)' });
+  }
+  asyncLib.waterfall([
+    function (done) {
+      db.Utilisateurs.findOne({
+        attributes: ['Login','password_'],
+        where: { Login: Login , password_: password_}
+      })
+        .then(function (userFound) {
+          done(null, userFound);
+        })
+        .catch(function (err) {
+          return res.status(500).json({ 'error': 'unable to verify user' });
+        });
+    },
+    function (userFound, done) {
+      if (userFound) {
+        bcrypt.hash(NewPsw, 5, function (err, bcryptedPassword) {
+          done(null, userFound, bcryptedPassword);
+        });
+      } else {
+        return res.status(409).json({ 'error': 'user already exist' });
+      }
+    },
+    function (userFound, bcryptedPassword, done) {
+      req.body.password_ = bcryptedPassword ;
+      
+
+      db.Utilisateurs.update(req.body, { where: { Login: Login} }).then(
+        () => {
+          res.send(req.body.password_)
+        }
+      )
+     
+       
+    }
+  ],
+);
+})
